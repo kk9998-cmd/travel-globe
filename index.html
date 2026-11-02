@@ -467,7 +467,7 @@ function hideLoading(){ loadingEl?.classList.add('hide'); }
 setTimeout(hideLoading, 12000);
 
 const texLoader = new THREE.TextureLoader();
-texLoader.load('assets/earth.jpg', tex => {
+function applyTexture(tex){
   tex.colorSpace = THREE.SRGBColorSpace;
   tex.anisotropy = renderer.capabilities.getMaxAnisotropy();
   earthMat.map = tex;
@@ -475,10 +475,15 @@ texLoader.load('assets/earth.jpg', tex => {
   earthMat.emissiveIntensity = 0.28;
   earthMat.needsUpdate = true;
   hideLoading();
-}, undefined, () => {
+}
+function useFallback(){
   const t = fallbackTexture();
   earthMat.map = t; earthMat.emissiveMap = t; earthMat.emissiveIntensity = .3; earthMat.needsUpdate = true;
   hideLoading();
+}
+// 优先 WebP（体积更小），失败再退回 JPG，再失败就用程序化贴图
+texLoader.load('assets/earth.webp', applyTexture, undefined, () => {
+  texLoader.load('assets/earth.jpg', applyTexture, undefined, useFallback);
 });
 
 function fallbackTexture(){
@@ -674,6 +679,8 @@ beijingArc.glow.visible = false;
 const worldY = new THREE.Vector3(0,1,0);
 const worldX = new THREE.Vector3(1,0,0);
 const Z = new THREE.Vector3(0,0,1);
+
+let entered = false;   // 用户是否已经离开引导页（在此之前不自动旋转）
 
 const view = {
   quat: new THREE.Quaternion(),
@@ -1229,8 +1236,8 @@ function animate(){
     if (view.vel.lengthSq() > .01){
       rotateBy(view.vel.x * .55, view.vel.y * .55);
       view.vel.multiplyScalar(.93);
-    } else if (view.autoSpin && now - view.idleAt > 2200){
-      tmpQ.setFromAxisAngle(worldY, dt * .075);
+    } else if (view.autoSpin && entered && now - view.idleAt > 3200){
+      tmpQ.setFromAxisAngle(worldY, dt * .022);
       view.quat.premultiply(tmpQ);
     }
   }
@@ -1287,6 +1294,7 @@ addEventListener('resize', () => {
 const intro = document.getElementById('intro');
 window.__g = { view, globe, camera, CITIES, TRIPS, selectCity, flyTo };
 function enter(withCam){
+  entered = true;
   intro.classList.add('hide');
   view.idleAt = performance.now();
   if (withCam){
