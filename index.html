@@ -113,6 +113,14 @@
   .pt:hover{transform:scale(1.55);background:rgba(190,235,255,.85)}
   .pt.on{background:#eaf7ff;box-shadow:0 0 0 3px rgba(127,227,255,.16),0 0 16px rgba(127,227,255,.85);transform:scale(1.5)}
 
+  /* ---------- loading ---------- */
+  #loading{position:fixed;z-index:5;left:50%;bottom:19%;transform:translateX(-50%);display:flex;align-items:center;gap:9px;
+    font-size:12px;letter-spacing:.1em;color:rgba(160,200,240,.72);transition:opacity .6s;pointer-events:none}
+  #loading.hide{opacity:0}
+  .spin{width:12px;height:12px;border-radius:50%;border:1.5px solid rgba(120,190,255,.22);border-top-color:#7fe3ff;
+    animation:spin .9s linear infinite}
+  @keyframes spin{to{transform:rotate(360deg)}}
+
   /* ---------- toast ---------- */
   #toast{position:fixed;z-index:9;left:50%;bottom:150px;transform:translate(-50%,14px);opacity:0;
     background:rgba(9,18,34,.92);border:1px solid rgba(120,180,255,.24);color:#d3ecff;font-size:12.5px;
@@ -244,6 +252,8 @@
 
 <div id="toast"></div>
 
+<div id="loading"><span class="spin"></span><span>正在加载地球…</span></div>
+
 <div id="intro">
   <div class="badge">Personal Travel Globe</div>
   <h2>把这几年的足迹<br>放在一颗星球上</h2>
@@ -272,7 +282,7 @@
 </div>
 
 <script type="importmap">
-{ "imports": { "three": "./assets/three.module.js" } }
+{ "imports": { "three": "./assets/three.module.min.js" } }
 </script>
 
 <script type="module">
@@ -452,6 +462,10 @@ function latLonToVec3(lat, lon, radius=R){
 }
 
 /* ---------- 贴图 ---------- */
+const loadingEl = document.getElementById('loading');
+function hideLoading(){ loadingEl?.classList.add('hide'); }
+setTimeout(hideLoading, 12000);
+
 const texLoader = new THREE.TextureLoader();
 texLoader.load('assets/earth.jpg', tex => {
   tex.colorSpace = THREE.SRGBColorSpace;
@@ -460,9 +474,11 @@ texLoader.load('assets/earth.jpg', tex => {
   earthMat.emissiveMap = tex;
   earthMat.emissiveIntensity = 0.28;
   earthMat.needsUpdate = true;
+  hideLoading();
 }, undefined, () => {
   const t = fallbackTexture();
   earthMat.map = t; earthMat.emissiveMap = t; earthMat.emissiveIntensity = .3; earthMat.needsUpdate = true;
+  hideLoading();
 });
 
 function fallbackTexture(){
